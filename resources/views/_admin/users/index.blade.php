@@ -88,13 +88,13 @@
                             <button type="button"
                                 class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-600 hover:bg-yellow-100 hover:border-yellow-300 focus:outline-none focus:bg-yellow-100 disabled:opacity-50 disabled:pointer-events-none dark:border-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-500 dark:hover:bg-yellow-800/30 dark:hover:border-yellow-700 cursor-pointer"
                                 title="Reset Password" data-hs-overlay="#reset-modal"
-                                onclick="setResetData('{{ $d->id }}', '{{ $d->name }}')">
+                                onclick='setResetData({{ $d->id }}, @json($d->name))'>
                                 @include('_admin._layout.icons.sidebar.change-password')
                             </button>
                             <button type="button"
                                 class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
                                 title="Delete" data-hs-overlay="#delete-modal"
-                                onclick="setDeleteData('{{ $d->id }}', '{{ $d->name }}')">
+                                onclick='setDeleteData({{ $d->id }}, @json($d->name))'>
                                 @include('_admin._layout.icons.trash')
                             </button>
                         </x-admin.table.td>
@@ -156,7 +156,7 @@
                             data-hs-overlay="#delete-modal">
                             Batal
                         </button>
-                        <form id="delete-form" method="POST" class="inline">
+                        <form id="delete-form" method="POST" class="inline" navigate-form>
                             @csrf
                             @method('DELETE')
                             <button type="submit"
@@ -212,14 +212,16 @@
     </div>
 
     <script>
-        function setDeleteData(id, name) {
+        window.setDeleteData = function(id, name) {
             document.getElementById('delete-user-name').textContent = name;
-            document.getElementById('delete-form').action = `/admin/users/delete/${id}`;
-        }
+            const baseUrl = "{{ route('admin.users.delete', ['id' => ':id']) }}";
+            document.getElementById('delete-form').action = baseUrl.replace(':id', id);
+        };
 
-        function setResetData(id, name) {
+        window.setResetData = function(id, name) {
             document.getElementById('reset-user-name').textContent = name;
-            document.getElementById('reset-form').action = `/admin/users/reset-password/${id}`;
-        }
+            const baseUrl = "{{ route('admin.users.resetPassword', ['id' => ':id']) }}";
+            document.getElementById('reset-form').action = baseUrl.replace(':id', id);
+        };
     </script>
 @endsection
