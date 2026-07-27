@@ -412,7 +412,7 @@ class LogBookUsecase extends Usecase
             if (! $log) {
                 return Response::buildErrorNotFound(ResponseConst::DEFAULT_ERROR_MESSAGE);
             }
-            if ($log->user_id != Auth::user()?->id) {
+            if ($log->user_id != Auth::user()?->id && Auth::user()?->access_type != UserConst::SUPERADMIN) {
                 return Response::buildErrorService('Anda tidak memiliki akses untuk mengubah data ini.');
             }
 
@@ -495,7 +495,7 @@ class LogBookUsecase extends Usecase
             if (! $log) {
                 return Response::buildErrorNotFound(ResponseConst::DEFAULT_ERROR_MESSAGE);
             }
-            if ($log->user_id != Auth::user()?->id) {
+            if ($log->user_id != Auth::user()?->id && Auth::user()?->access_type != UserConst::SUPERADMIN) {
                 return Response::buildErrorService('Anda tidak memiliki akses untuk menghapus data ini.');
             }
 
@@ -589,7 +589,7 @@ class LogBookUsecase extends Usecase
             }
 
             $log = DB::table(DatabaseConst::DAILY_LOG())->where('id', $image->daily_log_id)->first();
-            if ($log && $log->user_id != Auth::user()?->id) {
+            if ($log && $log->user_id != Auth::user()?->id && Auth::user()?->access_type != UserConst::SUPERADMIN) {
                 DB::rollback();
 
                 return Response::buildErrorService('Anda tidak memiliki akses untuk menghapus data ini.');

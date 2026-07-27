@@ -68,7 +68,7 @@
                             <button type="button"
                                 class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
                                 title="Delete" data-hs-overlay="#delete-modal"
-                                onclick="setDeleteData('{{ $d->id }}', '{{ e($d->holiday_name) }}')">
+                                onclick='setDeleteData({{ $d->id }}, @json($d->holiday_name))'>
                                 @include('_admin._layout.icons.trash')
                             </button>
                         </x-admin.table.td>
@@ -128,7 +128,7 @@
                             data-hs-overlay="#delete-modal">
                             Batal
                         </button>
-                        <form id="delete-form" method="POST" class="inline">
+                        <form id="delete-form" method="POST" class="inline" navigate-form>
                             @csrf
                             @method('DELETE')
                             <button type="submit"
@@ -143,9 +143,10 @@
     </div>
 
     <script>
-        function setDeleteData(id, title) {
+        window.setDeleteData = function(id, title) {
             document.getElementById('delete-item-title').textContent = title;
-            document.getElementById('delete-form').action = `/admin/holidays/delete/${id}`;
-        }
+            const baseUrl = "{{ route('admin.holidays.delete', ['id' => ':id']) }}";
+            document.getElementById('delete-form').action = baseUrl.replace(':id', id);
+        };
     </script>
 @endsection

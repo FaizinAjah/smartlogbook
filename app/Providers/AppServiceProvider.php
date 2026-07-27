@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Carbon\Carbon::setLocale('id');
+
         Blaze::optimize()->in(
             resource_path('views/components'),
             fold: true,
