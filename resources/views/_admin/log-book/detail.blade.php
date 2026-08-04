@@ -82,14 +82,11 @@
                         <p class="text-xs text-gray-500 dark:text-neutral-400 uppercase tracking-wide font-semibold mb-2">
                             Gambar
                         </p>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="logbook-images">
                             @foreach ($images as $img)
-                                <a href="{{ \Illuminate\Support\Facades\Storage::url($img->path) }}"
-                                    target="_blank" class="block">
-                                    <img src="{{ \Illuminate\Support\Facades\Storage::url($img->path) }}"
-                                        alt="{{ $img->original_name }}"
-                                        class="w-full aspect-square object-cover rounded-xl border border-gray-200 dark:border-neutral-700 hover:opacity-80 transition">
-                                </a>
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($img->path) }}"
+                                    alt="{{ $img->original_name }}"
+                                    class="w-full aspect-square object-cover rounded-xl border border-gray-200 dark:border-neutral-700 hover:opacity-80 transition cursor-pointer">
                             @endforeach
                         </div>
                     </div>
@@ -105,3 +102,34 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gallery = document.getElementById('logbook-images');
+        if (gallery) {
+            new window.Viewer(gallery, {
+                toolbar: {
+                    zoomIn: 1,
+                    zoomOut: 1,
+                    oneToOne: 1,
+                    reset: 1,
+                    prev: 1,
+                    play: {
+                        show: 1,
+                        size: 'large',
+                    },
+                    next: 1,
+                    rotateLeft: 1,
+                    rotateRight: 1,
+                    flipHorizontal: 1,
+                    flipVertical: 1,
+                },
+                viewed() {
+                    // This creates a nice viewer overlay without showing the original link
+                },
+            });
+        }
+    });
+</script>
+@endpush
