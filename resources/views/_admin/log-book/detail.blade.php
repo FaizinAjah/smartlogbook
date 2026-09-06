@@ -35,6 +35,7 @@
                         @if (isset($data->attendance_status))
                             <x-admin.logbook.badge-attendance :status="$data->attendance_status" />
                         @endif
+                        <x-admin.logbook.badge-status :status="$data->status ?? null" />
                     </div>
                 </div>
 
@@ -55,10 +56,10 @@
                             <p class="text-xs text-gray-500 dark:text-neutral-400 uppercase tracking-wide font-semibold mb-1">
                                 Dibuat Pada</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-neutral-200">
-                                {{ \Carbon\Carbon::parse($data->created_at)->translatedFormat('d F Y, H:i') }}
+                                {{ \Carbon\Carbon::parse($data->created_at)->timezone(config('app.timezone', 'Asia/Jakarta'))->translatedFormat('d F Y, H:i') }} WIB
                             </p>
                             <p class="text-xs text-gray-400 dark:text-neutral-500 mt-0.5">
-                                {{ \Carbon\Carbon::parse($data->created_at)->diffForHumans() }}
+                                {{ \Carbon\Carbon::parse($data->created_at)->timezone(config('app.timezone', 'Asia/Jakarta'))->diffForHumans() }}
                             </p>
                         </div>
                     @endif
@@ -68,10 +69,10 @@
                             <p class="text-xs text-gray-500 dark:text-neutral-400 uppercase tracking-wide font-semibold mb-1">
                                 Terakhir Diupdate</p>
                             <p class="text-sm font-medium text-gray-800 dark:text-neutral-200">
-                                {{ \Carbon\Carbon::parse($data->updated_at)->translatedFormat('d F Y, H:i') }}
+                                {{ \Carbon\Carbon::parse($data->updated_at)->timezone(config('app.timezone', 'Asia/Jakarta'))->translatedFormat('d F Y, H:i') }} WIB
                             </p>
                             <p class="text-xs text-gray-400 dark:text-neutral-500 mt-0.5">
-                                {{ \Carbon\Carbon::parse($data->updated_at)->diffForHumans() }}
+                                {{ \Carbon\Carbon::parse($data->updated_at)->timezone(config('app.timezone', 'Asia/Jakarta'))->diffForHumans() }}
                             </p>
                         </div>
                     @endif
@@ -92,7 +93,18 @@
                     </div>
                 @endif
 
-                <div class="mt-6 flex justify-start gap-x-2">
+                <div class="mt-6 flex justify-start items-center gap-x-2">
+                    @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN && !in_array(strtolower($data->status ?? ''), ['sudah_direview', 'sudah direview']))
+                        <form action="{{ route('admin.log_book.approve', $data->id) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="py-2.5 px-4 inline-flex items-center gap-x-2 text-sm font-semibold rounded-xl border border-transparent bg-green-600 text-white hover:bg-green-700 focus:outline-hidden focus:bg-green-700 disabled:opacity-50 disabled:pointer-events-none cursor-pointer">
+                                <svg class="shrink-0 size-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Approve Log Book
+                            </button>
+                        </form>
+                    @endif
                     <x-admin.button href="{{ route('admin.log_book.update', $data->id) }}" color="primary">
                         @include('_admin._layout.icons.pencil')
                         Edit Data

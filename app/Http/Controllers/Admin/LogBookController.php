@@ -60,8 +60,7 @@ class LogBookController extends Controller
         $isSuperadmin = Auth::user()?->access_type == UserConst::SUPERADMIN;
         $isCalendarView = empty($filters['keywords'])
             && ! empty($month)
-            && ! empty($year)
-            && (! $isSuperadmin || ! empty($user_id));
+            && ! empty($year);
 
         if ($isCalendarView) {
             $response = $this->usecase->getCalendarData($filters);
@@ -77,6 +76,8 @@ class LogBookController extends Controller
             'month' => $month,
             'year' => $year,
             'user_id' => $request->get('user_id'),
+            'filter_status' => $request->get('filter_status'),
+            'filterStatusOptions' => LogBookConst::getFilterStatusOptions(),
             'isCalendarView' => $isCalendarView,
             'monthOptions' => LogBookConst::getMonthOptions(),
             'yearOptions' => $this->usecase->getYearOptions(),
