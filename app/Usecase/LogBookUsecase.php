@@ -3,6 +3,7 @@
 namespace App\Usecase;
 
 use App\Constants\DatabaseConst;
+use App\Constants\LogBookConst;
 use App\Constants\ResponseConst;
 use App\Constants\UserConst;
 use App\Http\Presenter\Response;
@@ -46,6 +47,23 @@ class LogBookUsecase extends Usecase
                 })
                 ->when($filterData['year'] ?? false, function ($query, $year) {
                     return $query->whereYear('dl.log_date', $year);
+                })
+                ->when($filterData['filter_status'] ?? false, function ($query, $filterStatus) {
+                    if ($filterStatus === LogBookConst::STATUS_MENUNGGU_REVIEW) {
+                        return $query->where(function ($q) {
+                            $q->whereNull('dl.status')
+                                ->orWhere(function ($sub) {
+                                    $sub->where('dl.status', '!=', 'sudah_direview')
+                                        ->where('dl.status', '!=', 'Sudah Direview');
+                                });
+                        });
+                    }
+                    if ($filterStatus === LogBookConst::STATUS_SUDAH_REVIEW) {
+                        return $query->where(function ($q) {
+                            $q->where('dl.status', 'sudah_direview')
+                                ->orWhere('dl.status', 'Sudah Direview');
+                        });
+                    }
                 });
 
             if (Auth::user()?->access_type != UserConst::SUPERADMIN) {
@@ -99,6 +117,24 @@ class LogBookUsecase extends Usecase
             $isSuperadmin = Auth::user()?->access_type == UserConst::SUPERADMIN;
             $targetUserId = $isSuperadmin ? ($filterData['user_id'] ?? null) : Auth::user()?->id;
 
+            if ($targetUserId) {
+                $activeUsers = DB::table(DatabaseConst::USER())
+                    ->whereNull('deleted_at')
+                    ->where('id', $targetUserId)
+                    ->select('id', 'name')
+                    ->get();
+            } elseif ($isSuperadmin) {
+                $activeUsers = DB::table(DatabaseConst::USER())
+                    ->whereNull('deleted_at')
+                    ->where('access_type', UserConst::ANGGOTA)
+                    ->where('is_active', 1)
+                    ->select('id', 'name')
+                    ->orderBy('name', 'asc')
+                    ->get();
+            } else {
+                $activeUsers = collect([(object) ['id' => Auth::user()?->id, 'name' => Auth::user()?->name]]);
+            }
+
             $query = DB::table(DatabaseConst::DAILY_LOG().' as dl')
                 ->leftJoin(DatabaseConst::USER().' as u', 'dl.user_id', '=', 'u.id')
                 ->select('dl.*', 'u.name as user_name')
@@ -110,32 +146,25 @@ class LogBookUsecase extends Usecase
                 })
                 ->orderBy('dl.log_date', 'asc');
 
-            $byDate = [];
-            $maxLogDate = null;
-            // ponytail: cursor() streams rows 1-at-a-time, month is bounded so memory stays flat
+            $logsByDate = [];
             foreach ($query->cursor() as $log) {
                 $dateKey = Carbon::parse($log->log_date)->format('Y-m-d');
-                $byDate[$dateKey] = $log;
-                if ($maxLogDate === null || $dateKey > $maxLogDate) {
-                    $maxLogDate = $dateKey;
-                }
+                $logsByDate[$dateKey][$log->user_id][] = $log;
             }
 
             $holidays = $this->getHolidays($year, $month);
 
-            $today = Carbon::now()->format('Y-m-d');
+            $appTz = config('app.timezone', 'Asia/Jakarta');
+            $today = Carbon::now($appTz)->format('Y-m-d');
+            $todayCarbon = Carbon::today($appTz);
 
             $day = Carbon::createFromDate($year, $month, 1)->startOfMonth();
             $end = $day->copy()->endOfMonth();
 
-            // --- LOGIKA 1: untuk testing input masa depan
-            // $maxAllowedDate = max(array_filter([$today, $maxLogDate])) ?: $today;
-
-            // --- LOGIKA 2: Real implementation
-            if ($day->greaterThan(Carbon::today())) {
+            if ($day->greaterThan($todayCarbon)) {
                 return Response::buildSuccess(['list' => []], ResponseConst::HTTP_SUCCESS);
             }
-            $maxAllowedDate = $day->isSameMonth(Carbon::today())
+            $maxAllowedDate = $day->isSameMonth($todayCarbon)
                 ? $today
                 : $end->format('Y-m-d');
 
@@ -143,46 +172,102 @@ class LogBookUsecase extends Usecase
 
             foreach (CarbonPeriod::create($day, $end) as $currentDate) {
                 $dateKey = $currentDate->format('Y-m-d');
+                $dayLogs = $logsByDate[$dateKey] ?? [];
+
+                // Tampilkan secara real-time: tanggal hari ini ke belakang.
+                // Tanggal dan hari libur di masa depan (melebihi hari ini) tidak ditampilkan dulu
+                // kecuali jika ada data log yang sudah terinput.
+                if ($dateKey > $maxAllowedDate && empty($dayLogs)) {
+                    continue;
+                }
+
                 $holidayName = $holidays[$dateKey] ?? null;
                 $isWeekend = $currentDate->isWeekend();
                 $isHoliday = $holidayName !== null;
 
-                if (isset($byDate[$dateKey])) {
-                    $row = $byDate[$dateKey];
-                    $row->is_empty = false;
-                    $row->is_weekend = $isWeekend;
-                    $row->is_holiday = $isHoliday;
-                    $row->holiday_name = $holidayName;
-                    $rows[] = $row;
+                if ($isHoliday || $isWeekend) {
+                    if (! empty($dayLogs)) {
+                        foreach ($dayLogs as $userId => $userLogs) {
+                            foreach ($userLogs as $row) {
+                                $row->is_empty = false;
+                                $row->is_weekend = $isWeekend;
+                                $row->is_holiday = $isHoliday;
+                                $row->holiday_name = $holidayName;
+                                $rows[] = $row;
+                            }
+                        }
+                    } else {
+                        $dummy = new stdClass;
+                        $dummy->id = null;
+                        $dummy->user_id = null;
+                        $dummy->user_name = '-';
+                        $dummy->log_date = $dateKey;
+                        $dummy->title = $holidayName ?? 'Hari Libur';
+                        $dummy->description = null;
+                        $dummy->is_empty = true;
+                        $dummy->is_weekend = $isWeekend;
+                        $dummy->is_holiday = $isHoliday;
+                        $dummy->holiday_name = $holidayName;
+                        $dummy->status = 'holiday';
+                        $rows[] = $dummy;
+                    }
 
                     continue;
                 }
 
-                // Skip empty days beyond the time horizon so future days don't fill with "Belum Diisi".
-                if ($dateKey > $maxAllowedDate) {
-                    continue;
+                foreach ($activeUsers as $user) {
+                    if (isset($dayLogs[$user->id])) {
+                        foreach ($dayLogs[$user->id] as $row) {
+                            $row->is_empty = false;
+                            $row->is_weekend = false;
+                            $row->is_holiday = false;
+                            $row->holiday_name = null;
+                            $rows[] = $row;
+                        }
+                    } else {
+                        $dummy = new stdClass;
+                        $dummy->id = null;
+                        $dummy->user_id = $user->id;
+                        $dummy->user_name = $user->name;
+                        $dummy->log_date = $dateKey;
+                        $dummy->title = null;
+                        $dummy->description = null;
+                        $dummy->is_empty = true;
+                        $dummy->is_weekend = false;
+                        $dummy->is_holiday = false;
+                        $dummy->holiday_name = null;
+                        $dummy->status = 'empty';
+                        $rows[] = $dummy;
+                    }
                 }
 
-                $dummy = new stdClass;
-                $dummy->id = null;
-                $dummy->log_date = $dateKey;
-                $dummy->title = null;
-                $dummy->description = null;
-                $dummy->user_name = null;
-                $dummy->is_empty = true;
-                $dummy->is_weekend = $isWeekend;
-                $dummy->is_holiday = $isHoliday;
-                $dummy->holiday_name = $holidayName;
-                $rows[] = $dummy;
+                // Jika ada log dari user yang tidak terdaftar di activeUsers
+                foreach ($dayLogs as $userId => $userLogs) {
+                    if (! $activeUsers->contains('id', $userId)) {
+                        foreach ($userLogs as $row) {
+                            $row->is_empty = false;
+                            $row->is_weekend = false;
+                            $row->is_holiday = false;
+                            $row->holiday_name = null;
+                            $rows[] = $row;
+                        }
+                    }
+                }
             }
 
-            if (isset($filterData['filter_status'])) {
+            if (! empty($filterData['filter_status'])) {
                 $statusFilter = $filterData['filter_status'];
                 $rows = array_filter($rows, function ($row) use ($statusFilter) {
-                    if ($statusFilter === 'empty') {
+                    if ($statusFilter === 'empty' || $statusFilter === LogBookConst::STATUS_BELUM_DIISI) {
                         return $row->is_empty === true && $row->is_holiday === false && $row->is_weekend === false;
                     }
-                    if ($statusFilter === 'holiday') {
+                    if ($statusFilter === 'menunggu_review' || $statusFilter === LogBookConst::STATUS_MENUNGGU_REVIEW) {
+                        return $row->is_empty === false && ! in_array(strtolower($row->status ?? ''), ['sudah_direview', 'sudah direview']);
+                    }
+                    if ($statusFilter === 'sudah_direview' || $statusFilter === LogBookConst::STATUS_SUDAH_REVIEW) {
+                        return $row->is_empty === false && in_array(strtolower($row->status ?? ''), ['sudah_direview', 'sudah direview']);
+                    }
+                    if ($statusFilter === 'holiday' || $statusFilter === LogBookConst::STATUS_HARI_LIBUR) {
                         return $row->is_holiday === true || $row->is_weekend === true;
                     }
 
@@ -369,6 +454,7 @@ class LogBookUsecase extends Usecase
                     'attendance_status' => $data['attendance_status'],
                     'title' => $data['title'],
                     'description' => $data['description'] ?? null,
+                    'status' => 'menunggu_review',
                     'created_by' => Auth::user()?->id,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -627,6 +713,8 @@ class LogBookUsecase extends Usecase
         try {
             $users = DB::table(DatabaseConst::USER())
                 ->whereNull('deleted_at')
+                ->where('access_type', UserConst::ANGGOTA)
+                ->where('is_active', 1)
                 ->select('id', 'name')
                 ->orderBy('name', 'asc')
                 ->get();

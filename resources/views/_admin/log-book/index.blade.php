@@ -5,11 +5,11 @@
 @section('content')
     <x-admin.page-header :title="'Data ' . $page['title']" subtitle="Catatan aktivitas harian">
         <div class="flex gap-2">
-            <x-admin.button href="{{ route('admin.log_book.export_excel', ['keywords' => $keywords, 'month' => $month, 'year' => $year, 'user_id' => $user_id ?? '']) }}" color="success" class="font-bold">
+            <x-admin.button href="{{ route('admin.log_book.export_excel', ['keywords' => $keywords, 'month' => $month, 'year' => $year, 'user_id' => $user_id ?? '', 'filter_status' => request('filter_status')]) }}" color="success" class="font-bold">
                 @include('_admin._layout.icons.excel')
                 Export Excel
             </x-admin.button>
-            <x-admin.button href="{{ route('admin.log_book.export_pdf', ['keywords' => $keywords, 'month' => $month, 'year' => $year, 'user_id' => $user_id ?? '']) }}" color="danger" class="font-bold">
+            <x-admin.button href="{{ route('admin.log_book.export_pdf', ['keywords' => $keywords, 'month' => $month, 'year' => $year, 'user_id' => $user_id ?? '', 'filter_status' => request('filter_status')]) }}" color="danger" class="font-bold">
                 @include('_admin._layout.icons.pdf')
                 Export PDF
             </x-admin.button>
@@ -35,7 +35,7 @@
                 <x-admin.select :label="null" name="year" :options="$yearOptions" :value="$year ?? ''" size="sm" class="cursor-pointer" placeholder="Semua Tahun" />
             </div>
             <div class="w-full sm:w-48">
-                <x-admin.select :label="null" name="filter_status" :options="['' => 'Semua', 'empty' => 'Belum Diisi', 'holiday' => 'Hari Libur']" :value="request('filter_status')" size="sm" class="cursor-pointer" placeholder="Filter Status" />
+                <x-admin.select :label="null" name="filter_status" :options="$filterStatusOptions ?? \App\Constants\LogBookConst::getFilterStatusOptions()" :value="request('filter_status')" size="sm" class="cursor-pointer" placeholder="Semua Filter" />
             </div>
             @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN)
             <div class="w-full sm:w-48">
@@ -47,7 +47,7 @@
                     @include('_admin._layout.icons.search')
                     Cari
                 </x-admin.button>
-                @if (!empty($keywords) || !empty($month) || !empty($year) || !empty($user_id))
+                @if (!empty($keywords) || !empty($month) || !empty($year) || !empty($user_id) || !empty(request('filter_status')))
                     <x-admin.button href="{{ route('admin.log_book.index') }}" size="sm" color="outline-secondary">
                         @include('_admin._layout.icons.reset')
                         Reset
@@ -88,9 +88,19 @@
                     @endphp
                     <x-admin.table.tr class="{{ $rowClass }}">
                         <x-admin.table.td>
-                            <span class="text-sm font-medium {{ $isHoliday || $isWeekend ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-neutral-200' }}">
-                                {{ $d->log_date ? \Carbon\Carbon::parse($d->log_date)->translatedFormat('l, d M Y') : '-' }}
-                            </span>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium {{ $isHoliday || $isWeekend ? 'text-red-800 dark:text-red-200' : 'text-gray-800 dark:text-neutral-200' }}">
+                                    {{ $d->log_date ? \Carbon\Carbon::parse($d->log_date)->translatedFormat('l, d M Y') : '-' }}
+                                </span>
+                                @if (!$isEmpty && !empty($d->created_at))
+                                    <span class="text-xs text-gray-400 dark:text-neutral-500 mt-0.5 flex items-center gap-1" title="Waktu Pengumpulan">
+                                        <svg class="size-3 text-gray-400 dark:text-neutral-500 inline-block shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        {{ \Carbon\Carbon::parse($d->created_at)->timezone(config('app.timezone', 'Asia/Jakarta'))->format('H:i') }} WIB
+                                    </span>
+                                @endif
+                            </div>
                         </x-admin.table.td>
                         @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN)
                         <x-admin.table.td>
@@ -120,6 +130,10 @@
                         <x-admin.table.td>
                             @if (!$isEmpty)
                                 <x-admin.logbook.badge-status :status="$d->status ?? null" />
+                            @elseif (!$isHoliday && !$isWeekend)
+                                <span class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400">Belum Diisi</span>
+                            @elseif ($isHoliday || $isWeekend)
+                                <span class="inline-flex items-center gap-x-1.5 py-1.5 px-3 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-neutral-700 dark:text-neutral-300">Hari Libur</span>
                             @endif
                         </x-admin.table.td>
                         <x-admin.table.td innerClass="px-6 py-1.5 flex items-center justify-end gap-x-1">
@@ -132,7 +146,7 @@
                                     </a>
                                 @endif
                             @else
-                                @if ($isSuperadminView && isset($d->status) && $d->status !== 'sudah_direview')
+                                @if ($isSuperadminView && !in_array(strtolower($d->status ?? ''), ['sudah_direview', 'sudah direview']))
                                     <x-admin.logbook.btn-approve :id="$d->id" />
                                 @endif
                                 <a navigate
