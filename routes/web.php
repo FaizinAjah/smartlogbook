@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\HolidayController;
+use App\Http\Controllers\Admin\InstitutionController;
+use App\Http\Controllers\Admin\InternStudentController;
 use App\Http\Controllers\Admin\LogBookController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AuthController;
@@ -20,7 +22,7 @@ Route::get('test', function () {
 
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/login', [AuthController::class, 'doLogin'])->name('login.post');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Admin Users Routes
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
@@ -37,6 +39,32 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::post('/reset-password/{id}', [UserController::class, 'resetPassword'])->name('resetPassword');
     });
 
+    Route::middleware('access_type:1')->prefix('institutions')->name('institutions.')->group(function () {
+        Route::get('/', [InstitutionController::class, 'index'])->name('index');
+        Route::get('/add', [InstitutionController::class, 'add'])->name('add');
+        Route::post('/create', [InstitutionController::class, 'doCreate'])->name('create');
+        Route::get('/detail/{id}', [InstitutionController::class, 'detail'])->name('detail');
+        Route::get('/update/{id}', [InstitutionController::class, 'update'])->name('update');
+        Route::post('/update/{id}', [InstitutionController::class, 'doUpdate'])->name('doUpdate');
+        Route::delete('/delete/{id}', [InstitutionController::class, 'delete'])->name('delete');
+
+        // Mentor CRUD within institution
+        Route::post('/{id}/mentors/create', [InstitutionController::class, 'createMentor'])->name('mentors.create');
+        Route::post('/mentors/update/{mentorId}', [InstitutionController::class, 'updateMentor'])->name('mentors.update');
+        Route::delete('/mentors/delete/{mentorId}', [InstitutionController::class, 'deleteMentor'])->name('mentors.delete');
+    });
+
+    Route::middleware('access_type:1,3')->prefix('peserta-magang')->name('interns.')->group(function () {
+        Route::get('/', [InternStudentController::class, 'index'])->name('index');
+        Route::get('/add', [InternStudentController::class, 'add'])->name('add');
+        Route::post('/create', [InternStudentController::class, 'doCreate'])->name('create');
+        Route::get('/detail/{id}', [InternStudentController::class, 'detail'])->name('detail');
+        Route::get('/update/{id}', [InternStudentController::class, 'update'])->name('update');
+        Route::post('/update/{id}', [InternStudentController::class, 'doUpdate'])->name('doUpdate');
+        Route::delete('/delete/{id}', [InternStudentController::class, 'delete'])->name('delete');
+        Route::get('/mentors-by-institution/{institutionId}', [InternStudentController::class, 'getMentorsByInstitution'])->name('mentors_by_institution');
+    });
+
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/change-password', [UserController::class, 'changePassword'])->name('change_password');
         Route::post('/change-password', [UserController::class, 'doChangePassword'])->name('do_change_password');
@@ -51,7 +79,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::delete('/delete/{id}', [HolidayController::class, 'delete'])->name('delete');
     });
 
-    Route::middleware('access_type:1,2')->prefix('log-book')->name('log_book.')->group(function () {
+    Route::middleware('access_type:1,2,3')->prefix('log-book')->name('log_book.')->group(function () {
         Route::get('/', [LogBookController::class, 'index'])->name('index');
         Route::get('/add', [LogBookController::class, 'add'])->name('add');
         Route::get('/export-excel', [LogBookController::class, 'exportExcel'])->name('export_excel');

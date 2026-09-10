@@ -55,9 +55,7 @@
 
             </div>
 
-            <div class="w-full flex items-center justify-end ms-auto gap-x-1 md:gap-x-3">
-
-
+            <div class="w-full flex items-center justify-end ms-auto gap-x-2 py-2">
             </div>
         </nav>
     </header>

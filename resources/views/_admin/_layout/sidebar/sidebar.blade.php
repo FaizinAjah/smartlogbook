@@ -95,17 +95,57 @@
                             @include('_admin._layout.icons.sidebar.change-password')
                             Ubah Password
                         </a>
-                        <form action="{{ route('logout') }}" method="POST"
-                            onsubmit="return confirm('Apakah anda yakin ingin keluar?');">
-                            @csrf
-                            <button type="submit"
-                                class="w-full flex items-center gap-x-3 py-2.5 px-3 rounded-lg text-sm text-red-600 hover:bg-red-50 focus:outline-hidden focus:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-900/20 dark:focus:bg-red-900/20">
-                                @include('_admin._layout.icons.sidebar.logout')
-                                Log out
-                            </button>
-                        </form>
+                        <button type="button" data-hs-overlay="#logout-modal"
+                            class="w-full flex items-center gap-x-3 py-2.5 px-3 rounded-lg text-sm text-red-600 hover:bg-red-50 focus:outline-hidden focus:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-900/20 dark:focus:bg-red-900/20 cursor-pointer">
+                            @include('_admin._layout.icons.sidebar.logout')
+                            Log out
+                        </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Logout Confirmation Modal --}}
+<div id="logout-modal"
+    class="hs-overlay hidden size-full fixed top-0 start-0 z-[80] overflow-x-hidden overflow-y-auto pointer-events-none"
+    role="dialog" tabindex="-1">
+    <div
+        class="hs-overlay-open:scale-100 hs-overlay-open:opacity-100 scale-95 opacity-0 ease-out transition-all duration-300 w-full max-w-sm m-4 mx-auto min-h-[calc(100%-3.5rem)] flex items-center justify-center pointer-events-none">
+        <div
+            class="w-full bg-white border border-gray-100 shadow-2xl rounded-2xl p-6 text-center pointer-events-auto dark:bg-neutral-800 dark:border-neutral-700"
+            style="max-width: 380px;">
+            <!-- Centered Logout Icon Badge -->
+            <div class="size-14 mx-auto mb-4 flex items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                <svg class="size-7" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </div>
+
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">
+                Konfirmasi Keluar
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-neutral-400 mb-6">
+                Apakah Anda yakin ingin keluar dari akun <span class="font-semibold text-gray-700 dark:text-neutral-200">{{ $user->name }}</span>?
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button"
+                    class="w-full py-2.5 px-4 text-sm font-semibold rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-hidden dark:bg-neutral-700 dark:border-neutral-600 dark:text-white dark:hover:bg-neutral-600 transition cursor-pointer"
+                    data-hs-overlay="#logout-modal">
+                    Batal
+                </button>
+                <form id="global-logout-form" action="{{ route('logout') }}" method="POST" class="w-full">
+                    @csrf
+                    <button type="submit"
+                        class="w-full py-2.5 px-4 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 focus:outline-hidden shadow-sm hover:shadow transition cursor-pointer">
+                        Ya, Keluar
+                    </button>
+                </form>
             </div>
         </div>
     </div>

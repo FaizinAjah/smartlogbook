@@ -53,11 +53,12 @@ class LogBookController extends Controller
         ];
 
         $userOptions = [];
-        if (Auth::user()?->access_type == UserConst::SUPERADMIN) {
+        if (Auth::user()?->access_type == UserConst::SUPERADMIN || Auth::user()?->access_type == UserConst::PEMBIMBING) {
             $userOptions = $this->usecase->getUsersOptions();
         }
 
         $isSuperadmin = Auth::user()?->access_type == UserConst::SUPERADMIN;
+        $isPembimbing = Auth::user()?->access_type == UserConst::PEMBIMBING;
         $isCalendarView = empty($filters['keywords'])
             && ! empty($month)
             && ! empty($year);
@@ -85,8 +86,14 @@ class LogBookController extends Controller
         ]);
     }
 
-    public function add(Request $request): View|Response
+    public function add(Request $request): View|RedirectResponse|Response
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->route('admin.log_book.index')
+                ->with('error', 'Pembimbing hanya memiliki hak akses untuk melihat logbook.');
+        }
+
         return view('_admin.log-book.add', [
             'page' => $this->page,
             'defaultLogDate' => $request->get('log_date'),
@@ -95,6 +102,12 @@ class LogBookController extends Controller
 
     public function doCreate(Request $request): RedirectResponse
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->route('admin.log_book.index')
+                ->with('error', 'Pembimbing tidak memiliki hak untuk menambah logbook.');
+        }
+
         $process = $this->usecase->create(
             data: $request,
         );
@@ -132,6 +145,12 @@ class LogBookController extends Controller
 
     public function update(int $id): View|RedirectResponse|Response
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->route('admin.log_book.index')
+                ->with('error', 'Pembimbing tidak memiliki hak untuk mengedit logbook.');
+        }
+
         $data = $this->usecase->getByID($id);
 
         if (empty($data['data'])) {
@@ -152,6 +171,12 @@ class LogBookController extends Controller
 
     public function doUpdate(int $id, Request $request): RedirectResponse
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->route('admin.log_book.index')
+                ->with('error', 'Pembimbing tidak memiliki hak untuk mengedit logbook.');
+        }
+
         $process = $this->usecase->update(
             data: $request,
             id: $id,
@@ -171,6 +196,12 @@ class LogBookController extends Controller
 
     public function delete(int $id): RedirectResponse
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->route('admin.log_book.index')
+                ->with('error', 'Pembimbing tidak memiliki hak untuk menghapus logbook.');
+        }
+
         $process = $this->usecase->delete(id: $id);
 
         if ($process['success']) {
@@ -186,6 +217,12 @@ class LogBookController extends Controller
 
     public function approve(int $id): RedirectResponse
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->back()
+                ->with('error', 'Pembimbing tidak memiliki hak untuk menyetujui review logbook.');
+        }
+
         $process = $this->usecase->approve(id: $id);
 
         if ($process['success']) {
@@ -201,6 +238,12 @@ class LogBookController extends Controller
 
     public function deleteImage(int $imageId): RedirectResponse
     {
+        if (Auth::user()?->access_type == UserConst::PEMBIMBING) {
+            return redirect()
+                ->back()
+                ->with('error', 'Pembimbing tidak memiliki hak untuk menghapus gambar logbook.');
+        }
+
         $process = $this->usecase->deleteImage(id: $imageId);
 
         if ($process['success']) {

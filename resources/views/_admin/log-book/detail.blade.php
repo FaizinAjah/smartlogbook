@@ -51,6 +51,24 @@
                 @endif
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                    @if (!empty($data->user_name))
+                        <div class="p-4 bg-gray-50 rounded-xl dark:bg-neutral-700/50 border border-gray-100 dark:border-neutral-700 sm:col-span-2">
+                            <p class="text-xs text-gray-500 dark:text-neutral-400 uppercase tracking-wide font-semibold mb-1">
+                                Pembuat Logbook (Mahasiswa)</p>
+                            <p class="text-base font-bold text-gray-800 dark:text-neutral-100 flex items-center gap-2">
+                                <svg class="size-4 text-gray-500 dark:text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ $data->user_name }}
+                            </p>
+                            @if (!empty($data->user_email))
+                                <p class="text-xs text-gray-400 dark:text-neutral-400 mt-1">
+                                    {{ $data->user_email }}
+                                </p>
+                            @endif
+                        </div>
+                    @endif
+
                     @if (!empty($data->created_at))
                         <div class="p-4 bg-gray-50 rounded-xl dark:bg-neutral-700/50 border border-gray-100 dark:border-neutral-700">
                             <p class="text-xs text-gray-500 dark:text-neutral-400 uppercase tracking-wide font-semibold mb-1">
@@ -105,10 +123,12 @@
                             </button>
                         </form>
                     @endif
+                    @if(\Illuminate\Support\Facades\Auth::user()?->access_type != \App\Constants\UserConst::PEMBIMBING)
                     <x-admin.button href="{{ route('admin.log_book.update', $data->id) }}" color="primary">
                         @include('_admin._layout.icons.pencil')
                         Edit Data
                     </x-admin.button>
+                    @endif
                 </div>
             </div>
         </div>
