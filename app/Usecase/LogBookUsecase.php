@@ -66,12 +66,28 @@ class LogBookUsecase extends Usecase
                     }
                 });
 
-            if (Auth::user()?->access_type != UserConst::SUPERADMIN) {
-                $query->where('dl.user_id', Auth::user()?->id);
-            } else {
+            $user = Auth::user();
+            $isSuperadmin = $user?->access_type == UserConst::SUPERADMIN;
+            $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
+
+            if ($isPembimbing) {
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
+
+                if (! empty($filterData['user_id'])) {
+                    if (in_array((int) $filterData['user_id'], $studentIds)) {
+                        $query->where('dl.user_id', $filterData['user_id']);
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
+                } else {
+                    $query->whereIn('dl.user_id', ! empty($studentIds) ? $studentIds : [0]);
+                }
+            } elseif ($isSuperadmin) {
                 if (! empty($filterData['user_id'])) {
                     $query->where('dl.user_id', $filterData['user_id']);
                 }
+            } else {
+                $query->where('dl.user_id', $user?->id);
             }
 
             $query->orderBy('dl.log_date', 'desc')
@@ -114,25 +130,46 @@ class LogBookUsecase extends Usecase
         try {
             $month = (int) ($filterData['month'] ?? date('n'));
             $year = (int) ($filterData['year'] ?? date('Y'));
-            $isSuperadmin = Auth::user()?->access_type == UserConst::SUPERADMIN;
-            $targetUserId = $isSuperadmin ? ($filterData['user_id'] ?? null) : Auth::user()?->id;
+            $user = Auth::user();
+            $isSuperadmin = $user?->access_type == UserConst::SUPERADMIN;
+            $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
+            $targetUserId = $filterData['user_id'] ?? null;
 
-            if ($targetUserId) {
-                $activeUsers = DB::table(DatabaseConst::USER())
-                    ->whereNull('deleted_at')
-                    ->where('id', $targetUserId)
-                    ->select('id', 'name')
-                    ->get();
+            if ($isPembimbing) {
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
+
+                if ($targetUserId && in_array((int) $targetUserId, $studentIds)) {
+                    $activeUsers = DB::table(DatabaseConst::USER())
+                        ->whereNull('deleted_at')
+                        ->where('id', $targetUserId)
+                        ->select('id', 'name')
+                        ->get();
+                } else {
+                    $activeUsers = DB::table(DatabaseConst::USER())
+                        ->whereNull('deleted_at')
+                        ->whereIn('id', ! empty($studentIds) ? $studentIds : [0])
+                        ->select('id', 'name')
+                        ->orderBy('name', 'asc')
+                        ->get();
+                }
             } elseif ($isSuperadmin) {
-                $activeUsers = DB::table(DatabaseConst::USER())
-                    ->whereNull('deleted_at')
-                    ->where('access_type', UserConst::ANGGOTA)
-                    ->where('is_active', 1)
-                    ->select('id', 'name')
-                    ->orderBy('name', 'asc')
-                    ->get();
+                if ($targetUserId) {
+                    $activeUsers = DB::table(DatabaseConst::USER())
+                        ->whereNull('deleted_at')
+                        ->where('id', $targetUserId)
+                        ->select('id', 'name')
+                        ->get();
+                } else {
+                    $activeUsers = DB::table(DatabaseConst::USER())
+                        ->whereNull('deleted_at')
+                        ->where('access_type', UserConst::ANGGOTA)
+                        ->where('is_active', 1)
+                        ->select('id', 'name')
+                        ->orderBy('name', 'asc')
+                        ->get();
+                }
             } else {
-                $activeUsers = collect([(object) ['id' => Auth::user()?->id, 'name' => Auth::user()?->name]]);
+                $activeUsers = collect([(object) ['id' => $user?->id, 'name' => $user?->name]]);
             }
 
             $query = DB::table(DatabaseConst::DAILY_LOG().' as dl')
@@ -143,6 +180,9 @@ class LogBookUsecase extends Usecase
                 ->whereYear('dl.log_date', $year)
                 ->when($targetUserId, function ($query, $userId) {
                     return $query->where('dl.user_id', $userId);
+                })
+                ->when($isPembimbing && empty($targetUserId), function ($query) use ($studentIds) {
+                    return $query->whereIn('dl.user_id', ! empty($studentIds) ? $studentIds : [0]);
                 })
                 ->orderBy('dl.log_date', 'asc');
 
@@ -292,6 +332,48 @@ class LogBookUsecase extends Usecase
     }
 
     /**
+     * Get student user IDs supervised by the given mentor user.
+     */
+    protected function getSupervisedStudentUserIds(int $userId): array
+    {
+        $mentors = DB::table(DatabaseConst::MENTOR())
+            ->where('user_id', $userId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $mentorIds = $mentors->pluck('id')->toArray();
+        $institutionIds = $mentors->pluck('institution_id')->filter()->toArray();
+
+        if (empty($mentorIds) && empty($institutionIds)) {
+            return [];
+        }
+
+        return DB::table(DatabaseConst::INTERN())
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($mentorIds, $institutionIds) {
+                if (! empty($mentorIds)) {
+                    $q->whereIn('mentor_id', $mentorIds);
+                }
+                if (! empty($institutionIds)) {
+                    $q->orWhere(function ($sub) use ($institutionIds, $mentorIds) {
+                        $sub->whereIn('institution_id', $institutionIds);
+                        if (! empty($mentorIds)) {
+                            $sub->where(function ($s) use ($mentorIds) {
+                                $s->whereIn('mentor_id', $mentorIds)
+                                    ->orWhereNull('mentor_id');
+                            });
+                        }
+                    });
+                }
+            })
+            ->pluck('user_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    /**
      * Fetch national holidays for a month, cached 30 days.
      * Returns date(Y-m-d) => holiday name. Empty array on any failure.
      *
@@ -396,7 +478,7 @@ class LogBookUsecase extends Usecase
         try {
             $data = DB::table(DatabaseConst::DAILY_LOG().' as dl')
                 ->leftJoin(DatabaseConst::USER().' as u', 'dl.user_id', '=', 'u.id')
-                ->select('dl.*', 'u.name as user_name')
+                ->select('dl.*', 'u.name as user_name', 'u.email as user_email')
                 ->whereNull('dl.deleted_at')
                 ->where('dl.id', $id)
                 ->first();
@@ -405,7 +487,17 @@ class LogBookUsecase extends Usecase
                 return Response::buildErrorNotFound(ResponseConst::DEFAULT_ERROR_MESSAGE);
             }
 
-            if (Auth::user()?->access_type != UserConst::SUPERADMIN && $data->user_id != Auth::user()?->id) {
+            $user = Auth::user();
+            $isSuperadmin = $user?->access_type == UserConst::SUPERADMIN;
+            $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
+
+            if ($isPembimbing) {
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
+
+                if (! in_array($data->user_id, $studentIds)) {
+                    return Response::buildErrorNotFound('Anda tidak memiliki akses untuk melihat data ini.');
+                }
+            } elseif (! $isSuperadmin && $data->user_id != $user?->id) {
                 return Response::buildErrorNotFound('Anda tidak memiliki akses untuk melihat data ini.');
             }
 
@@ -711,13 +803,29 @@ class LogBookUsecase extends Usecase
     public function getUsersOptions(): array
     {
         try {
-            $users = DB::table(DatabaseConst::USER())
-                ->whereNull('deleted_at')
-                ->where('access_type', UserConst::ANGGOTA)
-                ->where('is_active', 1)
-                ->select('id', 'name')
-                ->orderBy('name', 'asc')
-                ->get();
+            $user = Auth::user();
+            if ($user?->access_type == UserConst::PEMBIMBING) {
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
+
+                if (empty($studentIds)) {
+                    return [];
+                }
+
+                $users = DB::table(DatabaseConst::USER())
+                    ->whereIn('id', $studentIds)
+                    ->whereNull('deleted_at')
+                    ->select('id', 'name')
+                    ->orderBy('name', 'asc')
+                    ->get();
+            } else {
+                $users = DB::table(DatabaseConst::USER())
+                    ->whereNull('deleted_at')
+                    ->where('access_type', UserConst::ANGGOTA)
+                    ->where('is_active', 1)
+                    ->select('id', 'name')
+                    ->orderBy('name', 'asc')
+                    ->get();
+            }
 
             $options = [];
             foreach ($users as $u) {
@@ -730,3 +838,4 @@ class LogBookUsecase extends Usecase
         }
     }
 }
+

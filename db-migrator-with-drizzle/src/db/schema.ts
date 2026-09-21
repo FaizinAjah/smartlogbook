@@ -210,3 +210,66 @@ export const holidaysTable = mysqlTable('holidays', {
     index('holidays_holiday_date_index').on(t.holiday_date),
 ]);
 
+export const institutionsTable = mysqlTable('institutions', {
+    id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    name: varchar({ length: 255 }).notNull(),
+    type: varchar({ length: 50 }).notNull().default('SMK'),
+    address: text(),
+    phone: varchar({ length: 50 }),
+    email: varchar({ length: 255 }),
+    website: varchar({ length: 255 }),
+    is_active: tinyint().notNull().default(1),
+    created_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    updated_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    deleted_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    created_at: timestamp(),
+    updated_at: timestamp(),
+    deleted_at: timestamp(),
+});
+
+export const mentorsTable = mysqlTable('mentors', {
+    id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    institution_id: bigint({ mode: 'number', unsigned: true }).notNull().references((): AnyMySqlColumn => institutionsTable.id),
+    user_id: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    name: varchar({ length: 255 }).notNull(),
+    identity_number: varchar({ length: 100 }),
+    phone: varchar({ length: 50 }),
+    position: varchar({ length: 100 }),
+    is_active: tinyint().notNull().default(1),
+    created_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    updated_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    deleted_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    created_at: timestamp(),
+    updated_at: timestamp(),
+    deleted_at: timestamp(),
+}, (t) => [
+    index('mentors_institution_id_index').on(t.institution_id),
+    index('mentors_user_id_index').on(t.user_id),
+]);
+
+export const internsTable = mysqlTable('interns', {
+    id: bigint({ mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    user_id: bigint({ mode: 'number', unsigned: true }).notNull().references((): AnyMySqlColumn => usersTable.id),
+    institution_id: bigint({ mode: 'number', unsigned: true }).notNull().references((): AnyMySqlColumn => institutionsTable.id),
+    mentor_id: bigint({ mode: 'number', unsigned: true }).notNull().references((): AnyMySqlColumn => mentorsTable.id),
+    nis_nim: varchar({ length: 100 }),
+    major: varchar({ length: 150 }),
+    start_date: date(),
+    end_date: date(),
+    status: varchar({ length: 50 }).notNull().default('aktif'),
+    notes: text(),
+    created_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    updated_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    deleted_by: bigint({ mode: 'number', unsigned: true }).references((): AnyMySqlColumn => usersTable.id),
+    created_at: timestamp(),
+    updated_at: timestamp(),
+    deleted_at: timestamp(),
+}, (t) => [
+    index('interns_user_id_index').on(t.user_id),
+    index('interns_institution_id_index').on(t.institution_id),
+    index('interns_mentor_id_index').on(t.mentor_id),
+    index('interns_status_index').on(t.status),
+]);
+
+
+

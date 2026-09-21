@@ -45,4 +45,29 @@ class DatabaseConst
     {
         return self::DB_CORE().'.holidays';
     }
+
+    public static function INSTITUTION(): string
+    {
+        return self::DB_CORE().'.institutions';
+    }
+
+    public static function MENTOR(): string
+    {
+        return self::DB_CORE().'.mentors';
+    }
+
+    public static function SUPERVISOR(): string
+    {
+        return self::MENTOR();
+    }
+
+    public static function INTERN(): string
+    {
+        return self::DB_CORE().'.interns';
+    }
+
+    public static function INTERN_STUDENT(): string
+    {
+        return self::INTERN();
+    }
 }

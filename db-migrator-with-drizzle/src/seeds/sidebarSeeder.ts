@@ -101,6 +101,38 @@ export async function sidebarSeeder(): Promise<void> {
             updated_at: new Date('2026-06-14 13:05:54'),
             deleted_at: null,
         },
+        {
+            id: 5,
+            parent_id: null,
+            label: 'Institusi',
+            route_name: 'admin.institutions.index',
+            icon: '_admin._layout.icons.sidebar.institution',
+            group: 'utama',
+            sort_order: 4,
+            is_active: 1,
+            created_by: null,
+            updated_by: null,
+            deleted_by: null,
+            created_at: new Date('2026-06-14 13:05:54'),
+            updated_at: new Date('2026-06-14 13:05:54'),
+            deleted_at: null,
+        },
+        {
+            id: 6,
+            parent_id: null,
+            label: 'Peserta Magang',
+            route_name: 'admin.interns.index',
+            icon: '_admin._layout.icons.sidebar.intern',
+            group: 'utama',
+            sort_order: 5,
+            is_active: 1,
+            created_by: null,
+            updated_by: null,
+            deleted_by: null,
+            created_at: new Date('2026-06-14 13:05:54'),
+            updated_at: new Date('2026-06-14 13:05:54'),
+            deleted_at: null,
+        },
     ];
 
     for (const menu of menus) {
@@ -163,6 +195,41 @@ export async function sidebarSeeder(): Promise<void> {
             id: 6,
             sidebar_menu_id: 4,
             access_type: 1,
+            created_by: 2,
+            created_at: new Date('2026-06-29 12:27:40'),
+        },
+        {
+            id: 7,
+            sidebar_menu_id: 1, // Dashboard
+            access_type: 3, // Pembimbing
+            created_by: 2,
+            created_at: new Date('2026-06-29 12:27:40'),
+        },
+        {
+            id: 8,
+            sidebar_menu_id: 3, // Log Book
+            access_type: 3, // Pembimbing
+            created_by: 2,
+            created_at: new Date('2026-06-29 12:27:40'),
+        },
+        {
+            id: 9,
+            sidebar_menu_id: 5, // Institusi
+            access_type: 1, // Superadmin
+            created_by: 2,
+            created_at: new Date('2026-06-29 12:27:40'),
+        },
+        {
+            id: 10,
+            sidebar_menu_id: 6, // Peserta Magang
+            access_type: 1, // Superadmin
+            created_by: 2,
+            created_at: new Date('2026-06-29 12:27:40'),
+        },
+        {
+            id: 11,
+            sidebar_menu_id: 6, // Peserta Magang
+            access_type: 3, // Pembimbing
             created_by: 2,
             created_at: new Date('2026-06-29 12:27:40'),
         },

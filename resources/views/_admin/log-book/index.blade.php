@@ -13,7 +13,7 @@
                 @include('_admin._layout.icons.pdf')
                 Export PDF
             </x-admin.button>
-            @if(\Illuminate\Support\Facades\Auth::user()?->access_type != \App\Constants\UserConst::SUPERADMIN)
+            @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::ANGGOTA)
             <x-admin.button href="{{ route('admin.log_book.add') }}" class="font-bold">
                 @include('_admin._layout.icons.add')
                 Tambah Data
@@ -37,7 +37,7 @@
             <div class="w-full sm:w-48">
                 <x-admin.select :label="null" name="filter_status" :options="$filterStatusOptions ?? \App\Constants\LogBookConst::getFilterStatusOptions()" :value="request('filter_status')" size="sm" class="cursor-pointer" placeholder="Semua Filter" />
             </div>
-            @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN)
+            @if(in_array(\Illuminate\Support\Facades\Auth::user()?->access_type, [\App\Constants\UserConst::SUPERADMIN, \App\Constants\UserConst::PEMBIMBING]))
             <div class="w-full sm:w-48">
                 <x-admin.select :label="null" name="user_id" :options="$userOptions" :value="$user_id ?? ''" size="sm" class="cursor-pointer" placeholder="Semua Anggota" />
             </div>
@@ -62,7 +62,7 @@
             <x-admin.table.thead>
                 <tr>
                     <x-admin.table.th class="w-px whitespace-nowrap">Tanggal</x-admin.table.th>
-                    @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN)
+                    @if(in_array(\Illuminate\Support\Facades\Auth::user()?->access_type, [\App\Constants\UserConst::SUPERADMIN, \App\Constants\UserConst::PEMBIMBING]))
                         <x-admin.table.th class="w-px whitespace-nowrap">Pembuat</x-admin.table.th>
                     @endif
                     <x-admin.table.th>Judul</x-admin.table.th>
@@ -77,7 +77,10 @@
                         $isWeekend = !empty($d->is_weekend);
                         $isHoliday = !empty($d->is_holiday);
                         $isEmpty = !empty($d->is_empty);
-                        $isSuperadminView = \Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN;
+                        $authAccess = \Illuminate\Support\Facades\Auth::user()?->access_type;
+                        $isSuperadminView = $authAccess == \App\Constants\UserConst::SUPERADMIN;
+                        $isPembimbingView = $authAccess == \App\Constants\UserConst::PEMBIMBING;
+                        $isAnggotaView = $authAccess == \App\Constants\UserConst::ANGGOTA;
                         
                         $rowClass = '';
                         if ($isHoliday || $isWeekend) {
@@ -102,7 +105,7 @@
                                 @endif
                             </div>
                         </x-admin.table.td>
-                        @if(\Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN)
+                        @if(in_array(\Illuminate\Support\Facades\Auth::user()?->access_type, [\App\Constants\UserConst::SUPERADMIN, \App\Constants\UserConst::PEMBIMBING]))
                         <x-admin.table.td>
                             <span class="text-sm font-semibold text-gray-800 dark:text-neutral-200">{{ $d->user_name ?? '-' }}</span>
                         </x-admin.table.td>
@@ -138,7 +141,7 @@
                         </x-admin.table.td>
                         <x-admin.table.td innerClass="px-6 py-1.5 flex items-center justify-end gap-x-1">
                             @if ($isEmpty)
-                                @if (! $isSuperadminView)
+                                @if ($isAnggotaView)
                                     <a navigate
                                         class="inline-flex items-center justify-center h-8 px-3 text-sm font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-500 dark:hover:bg-blue-800/30 dark:hover:border-blue-700"
                                         href="{{ route('admin.log_book.add', ['date' => $d->log_date]) }}" title="Isi Logbook">
@@ -146,31 +149,39 @@
                                     </a>
                                 @endif
                             @else
-                                @if ($isSuperadminView && !in_array(strtolower($d->status ?? ''), ['sudah_direview', 'sudah direview']))
-                                    <x-admin.logbook.btn-approve :id="$d->id" />
+                                @if ($isPembimbingView)
+                                    <a navigate
+                                        class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+                                        href="{{ route('admin.log_book.detail', $d->id) }}" title="Lihat Detail">
+                                        @include('_admin._layout.icons.view_detail')
+                                    </a>
+                                @else
+                                    @if ($isSuperadminView && !in_array(strtolower($d->status ?? ''), ['sudah_direview', 'sudah direview']))
+                                        <x-admin.logbook.btn-approve :id="$d->id" />
+                                    @endif
+                                    <a navigate
+                                        class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+                                        href="{{ route('admin.log_book.detail', $d->id) }}" title="Lihat Detail">
+                                        @include('_admin._layout.icons.view_detail')
+                                    </a>
+                                    <a navigate
+                                        class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-500 dark:hover:bg-blue-800/30 dark:hover:border-blue-700"
+                                        href="{{ route('admin.log_book.update', $d->id) }}" title="Edit">
+                                        @include('_admin._layout.icons.pencil')
+                                    </a>
+                                    <button type="button"
+                                        class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
+                                        title="Delete" data-hs-overlay="#delete-modal"
+                                        onclick='setDeleteData({{ $d->id }}, @json($d->title))'>
+                                        @include('_admin._layout.icons.trash')
+                                    </button>
                                 @endif
-                                <a navigate
-                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-                                    href="{{ route('admin.log_book.detail', $d->id) }}" title="View">
-                                    @include('_admin._layout.icons.view_detail')
-                                </a>
-                                <a navigate
-                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:bg-blue-100 disabled:opacity-50 disabled:pointer-events-none dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-500 dark:hover:bg-blue-800/30 dark:hover:border-blue-700"
-                                    href="{{ route('admin.log_book.update', $d->id) }}" title="Edit">
-                                    @include('_admin._layout.icons.pencil')
-                                </a>
-                                <button type="button"
-                                    class="inline-flex items-center justify-center size-8 text-sm font-semibold rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300 focus:outline-none focus:bg-red-100 disabled:opacity-50 disabled:pointer-events-none dark:border-red-800 dark:bg-red-900/20 dark:text-red-500 dark:hover:bg-red-800/30 dark:hover:border-red-700 cursor-pointer"
-                                    title="Delete" data-hs-overlay="#delete-modal"
-                                    onclick='setDeleteData({{ $d->id }}, @json($d->title))'>
-                                    @include('_admin._layout.icons.trash')
-                                </button>
                             @endif
                         </x-admin.table.td>
                     </x-admin.table.tr>
                 @empty
                     <tr>
-                        <td colspan="{{ \Illuminate\Support\Facades\Auth::user()?->access_type == \App\Constants\UserConst::SUPERADMIN ? 4 : 3 }}" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-neutral-500">
+                        <td colspan="{{ in_array(\Illuminate\Support\Facades\Auth::user()?->access_type, [\App\Constants\UserConst::SUPERADMIN, \App\Constants\UserConst::PEMBIMBING]) ? 6 : 5 }}" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-neutral-500">
                             <x-admin.empty-state />
                         </td>
                     </tr>
