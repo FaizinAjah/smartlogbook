@@ -55,6 +55,13 @@ class InstitutionController extends Controller
         );
 
         if ($process['success']) {
+            $newInstitutionId = $process['data']['id'] ?? null;
+            if ($newInstitutionId) {
+                return redirect()
+                    ->route('admin.institutions.mentors.add', $newInstitutionId)
+                    ->with('success', 'Data institusi berhasil ditambahkan. Silakan tambahkan pembimbing untuk institusi ini.');
+            }
+
             return redirect()
                 ->route('admin.institutions.index')
                 ->with('success', ResponseConst::SUCCESS_MESSAGE_CREATED);
@@ -64,6 +71,24 @@ class InstitutionController extends Controller
                 ->withInput()
                 ->with('error', $process['message'] ?? ResponseConst::DEFAULT_ERROR_MESSAGE);
         }
+    }
+
+    public function addMentor(int $id): View|RedirectResponse|Response
+    {
+        $response = $this->usecase->getByID($id);
+
+        if (empty($response['data'])) {
+            return redirect()
+                ->intended($this->baseRedirect)
+                ->with('error', ResponseConst::DEFAULT_ERROR_MESSAGE);
+        }
+
+        $institution = (object) ($response['data']['institution'] ?? []);
+
+        return view('_admin.institutions.add_mentor', [
+            'institution' => $institution,
+            'page' => $this->page,
+        ]);
     }
 
     public function detail(int $id): View|RedirectResponse|Response
@@ -158,6 +183,26 @@ class InstitutionController extends Controller
         }
     }
 
+    public function editMentor(int $mentorId): View|RedirectResponse|Response
+    {
+        $response = $this->usecase->getMentorByID($mentorId);
+
+        if (empty($response['data'])) {
+            return redirect()
+                ->intended($this->baseRedirect)
+                ->with('error', ResponseConst::DEFAULT_ERROR_MESSAGE);
+        }
+
+        $mentor = (object) ($response['data']['mentor'] ?? []);
+        $institution = (object) ($response['data']['institution'] ?? []);
+
+        return view('_admin.institutions.edit_mentor', [
+            'mentor' => $mentor,
+            'institution' => $institution,
+            'page' => $this->page,
+        ]);
+    }
+
     public function updateMentor(int $mentorId, Request $request): RedirectResponse
     {
         $process = $this->usecase->updateMentor(
@@ -166,6 +211,13 @@ class InstitutionController extends Controller
         );
 
         if ($process['success']) {
+            $institutionId = $process['data']['institution_id'] ?? null;
+            if ($institutionId) {
+                return redirect()
+                    ->route('admin.institutions.detail', $institutionId)
+                    ->with('success', 'Data pembimbing berhasil diperbarui.');
+            }
+
             return redirect()
                 ->back()
                 ->with('success', 'Data pembimbing berhasil diperbarui.');

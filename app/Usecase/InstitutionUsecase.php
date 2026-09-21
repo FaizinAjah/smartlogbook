@@ -125,8 +125,6 @@ class InstitutionUsecase extends Usecase
             'name' => 'required|string|max:255',
             'type' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'website' => 'nullable|string|max:255',
             'address' => 'nullable|string',
         ]);
 
@@ -169,8 +167,6 @@ class InstitutionUsecase extends Usecase
             'name' => 'required|string|max:255',
             'type' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'website' => 'nullable|string|max:255',
             'address' => 'nullable|string',
         ]);
 
@@ -254,7 +250,6 @@ class InstitutionUsecase extends Usecase
             'email' => 'required|email|max:255',
             'identity_number' => 'nullable|string|max:100',
             'phone' => 'nullable|string|max:50',
-            'position' => 'nullable|string|max:100',
         ]);
 
         $validator->validate();
@@ -297,7 +292,7 @@ class InstitutionUsecase extends Usecase
                 'name' => $data['name'],
                 'identity_number' => $data['identity_number'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'position' => $data['position'] ?? 'Pembimbing',
+                'position' => 'Pembimbing',
                 'is_active' => 1,
                 'created_by' => Auth::user()?->id,
                 'created_at' => now(),
@@ -311,6 +306,51 @@ class InstitutionUsecase extends Usecase
             Log::error(
                 message: $e->getMessage(),
                 context: ['method' => __METHOD__]
+            );
+
+            return Response::buildErrorService($e->getMessage());
+        }
+    }
+
+    /**
+     * Get mentor detail by ID.
+     */
+    public function getMentorByID(int $mentorId): array
+    {
+        try {
+            $mentor = DB::table(DatabaseConst::MENTOR().' as m')
+                ->leftJoin(DatabaseConst::USER().' as u', 'm.user_id', '=', 'u.id')
+                ->leftJoin(DatabaseConst::INSTITUTION().' as inst', 'm.institution_id', '=', 'inst.id')
+                ->select(
+                    'm.*',
+                    'u.email as user_email',
+                    'inst.name as institution_name'
+                )
+                ->where('m.id', $mentorId)
+                ->whereNull('m.deleted_at')
+                ->first();
+
+            if (! $mentor) {
+                return Response::buildErrorNotFound();
+            }
+
+            $institution = DB::table(DatabaseConst::INSTITUTION())
+                ->where('id', $mentor->institution_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            return Response::buildSuccess(
+                data: [
+                    'mentor' => (object) $mentor,
+                    'institution' => (object) ($institution ?? ['id' => $mentor->institution_id, 'name' => $mentor->institution_name]),
+                ]
+            );
+        } catch (Exception $e) {
+            Log::error(
+                message: $e->getMessage(),
+                context: [
+                    'method' => __METHOD__,
+                ]
             );
 
             return Response::buildErrorService($e->getMessage());
@@ -350,12 +390,24 @@ class InstitutionUsecase extends Usecase
                     'name' => $data['name'],
                     'identity_number' => $data['identity_number'] ?? null,
                     'phone' => $data['phone'] ?? null,
-                    'position' => $data['position'] ?? null,
+                    'position' => $data['position'] ?? $mentor->position ?? 'Pembimbing',
                     'updated_by' => Auth::user()?->id,
                     'updated_at' => now(),
                 ]);
 
             if ($mentor->user_id) {
+                $existingUser = DB::table(DatabaseConst::USER())
+                    ->where('email', $data['email'])
+                    ->where('id', '!=', $mentor->user_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existingUser) {
+                    DB::rollback();
+
+                    return Response::buildErrorService('Email sudah digunakan oleh pengguna lain.');
+                }
+
                 DB::table(DatabaseConst::USER())
                     ->where('id', $mentor->user_id)
                     ->update([
@@ -369,6 +421,9 @@ class InstitutionUsecase extends Usecase
             DB::commit();
 
             return Response::buildSuccess(
+                data: [
+                    'institution_id' => $mentor->institution_id,
+                ],
                 message: ResponseConst::SUCCESS_MESSAGE_UPDATED
             );
         } catch (Exception $e) {

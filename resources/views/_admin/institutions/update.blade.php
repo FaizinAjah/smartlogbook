@@ -63,25 +63,6 @@
                         @enderror
                     </div>
 
-                    {{-- Telepon --}}
-                    <div>
-                        <label for="phone" class="block text-sm font-medium mb-2 dark:text-white">Nomor Telepon / Kontak</label>
-                        <input type="text" id="phone" name="phone" value="{{ old('phone', $data->phone) }}"
-                            class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 placeholder-neutral-300 dark:placeholder-neutral-500 @error('phone') border-red-500 @enderror">
-                        @error('phone')
-                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- Website --}}
-                    <div>
-                        <label for="website" class="block text-sm font-medium mb-2 dark:text-white">Website</label>
-                        <input type="text" id="website" name="website" value="{{ old('website', $data->website) }}"
-                            class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 placeholder-neutral-300 dark:placeholder-neutral-500 @error('website') border-red-500 @enderror">
-                        @error('website')
-                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
 
                     {{-- Alamat --}}
                     <div>

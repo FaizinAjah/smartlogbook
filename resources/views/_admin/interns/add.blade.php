@@ -135,16 +135,16 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {{-- Tanggal Mulai --}}
                         <div>
-                            <label for="start_date" class="block text-sm font-medium mb-2 dark:text-white">Tanggal Mulai Magang</label>
-                            <input type="date" id="start_date" name="start_date" value="{{ old('start_date') }}"
-                                class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-300">
+                            <x-admin.input type="text" id="start_date" name="start_date" label="Tanggal Mulai Magang" class="datepicker"
+                                placeholder="Pilih tanggal mulai" autocomplete="off" value="{{ old('start_date') }}"
+                                error="{{ $errors->first('start_date') }}" />
                         </div>
 
                         {{-- Tanggal Selesai --}}
                         <div>
-                            <label for="end_date" class="block text-sm font-medium mb-2 dark:text-white">Tanggal Selesai Magang</label>
-                            <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}"
-                                class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-300">
+                            <x-admin.input type="text" id="end_date" name="end_date" label="Tanggal Selesai Magang" class="datepicker"
+                                placeholder="Pilih tanggal selesai" autocomplete="off" value="{{ old('end_date') }}"
+                                error="{{ $errors->first('end_date') }}" />
                         </div>
                     </div>
 
@@ -157,14 +157,6 @@
                             <option value="selesai" {{ old('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
                             <option value="keluar" {{ old('status') == 'keluar' ? 'selected' : '' }}>Keluar</option>
                         </select>
-                    </div>
-
-                    {{-- Catatan --}}
-                    <div>
-                        <label for="notes" class="block text-sm font-medium mb-2 dark:text-white">Catatan Tambahan</label>
-                        <textarea id="notes" name="notes" rows="3"
-                            class="py-3 px-4 block w-full border-gray-200 rounded-lg text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-300 placeholder-neutral-300 dark:placeholder-neutral-500"
-                            placeholder="Catatan proyek, divisi penempatan, dll...">{{ old('notes') }}</textarea>
                     </div>
 
                     <div class="pt-4 flex justify-end gap-x-2">
@@ -220,5 +212,14 @@
 
         // Initialize view state
         toggleStudentSource();
+
+        if (window.flatpickr) {
+            window.flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "j F Y",
+                allowInput: true
+            });
+        }
     </script>
 @endsection

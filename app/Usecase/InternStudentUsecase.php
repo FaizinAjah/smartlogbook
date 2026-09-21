@@ -44,13 +44,31 @@ class InternStudentUsecase extends Usecase
 
             // Scoping for Pembimbing
             if ($isPembimbing) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
+                $mentors = DB::table(DatabaseConst::MENTOR())
                     ->where('user_id', $user->id)
                     ->whereNull('deleted_at')
-                    ->first();
+                    ->get();
 
-                if ($mentor) {
-                    $query->where('i.mentor_id', $mentor->id);
+                $mentorIds = $mentors->pluck('id')->toArray();
+                $institutionIds = $mentors->pluck('institution_id')->filter()->toArray();
+
+                if (! empty($mentorIds) || ! empty($institutionIds)) {
+                    $query->where(function ($q) use ($mentorIds, $institutionIds) {
+                        if (! empty($mentorIds)) {
+                            $q->whereIn('i.mentor_id', $mentorIds);
+                        }
+                        if (! empty($institutionIds)) {
+                            $q->orWhere(function ($sub) use ($institutionIds, $mentorIds) {
+                                $sub->whereIn('i.institution_id', $institutionIds);
+                                if (! empty($mentorIds)) {
+                                    $sub->where(function ($s) use ($mentorIds) {
+                                        $s->whereIn('i.mentor_id', $mentorIds)
+                                            ->orWhereNull('i.mentor_id');
+                                    });
+                                }
+                            });
+                        }
+                    });
                 } else {
                     $query->whereRaw('1 = 0'); // No mentor assigned
                 }
@@ -131,15 +149,34 @@ class InternStudentUsecase extends Usecase
                 ->whereNull('i.deleted_at');
 
             if ($isPembimbing) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
+                $mentors = DB::table(DatabaseConst::MENTOR())
                     ->where('user_id', $user->id)
                     ->whereNull('deleted_at')
-                    ->first();
+                    ->get();
 
-                if (! $mentor) {
+                $mentorIds = $mentors->pluck('id')->toArray();
+                $institutionIds = $mentors->pluck('institution_id')->filter()->toArray();
+
+                if (empty($mentorIds) && empty($institutionIds)) {
                     return Response::buildErrorNotFound();
                 }
-                $query->where('i.mentor_id', $mentor->id);
+
+                $query->where(function ($q) use ($mentorIds, $institutionIds) {
+                    if (! empty($mentorIds)) {
+                        $q->whereIn('i.mentor_id', $mentorIds);
+                    }
+                    if (! empty($institutionIds)) {
+                        $q->orWhere(function ($sub) use ($institutionIds, $mentorIds) {
+                            $sub->whereIn('i.institution_id', $institutionIds);
+                            if (! empty($mentorIds)) {
+                                $sub->where(function ($s) use ($mentorIds) {
+                                    $s->whereIn('i.mentor_id', $mentorIds)
+                                        ->orWhereNull('i.mentor_id');
+                                });
+                            }
+                        });
+                    }
+                });
             }
 
             $data = $query->first();

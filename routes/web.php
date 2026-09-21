@@ -49,20 +49,26 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
         Route::delete('/delete/{id}', [InstitutionController::class, 'delete'])->name('delete');
 
         // Mentor CRUD within institution
+        Route::get('/{id}/mentors/add', [InstitutionController::class, 'addMentor'])->name('mentors.add');
         Route::post('/{id}/mentors/create', [InstitutionController::class, 'createMentor'])->name('mentors.create');
+        Route::get('/mentors/edit/{mentorId}', [InstitutionController::class, 'editMentor'])->name('mentors.edit');
         Route::post('/mentors/update/{mentorId}', [InstitutionController::class, 'updateMentor'])->name('mentors.update');
         Route::delete('/mentors/delete/{mentorId}', [InstitutionController::class, 'deleteMentor'])->name('mentors.delete');
     });
 
     Route::middleware('access_type:1,3')->prefix('peserta-magang')->name('interns.')->group(function () {
         Route::get('/', [InternStudentController::class, 'index'])->name('index');
-        Route::get('/add', [InternStudentController::class, 'add'])->name('add');
-        Route::post('/create', [InternStudentController::class, 'doCreate'])->name('create');
         Route::get('/detail/{id}', [InternStudentController::class, 'detail'])->name('detail');
-        Route::get('/update/{id}', [InternStudentController::class, 'update'])->name('update');
-        Route::post('/update/{id}', [InternStudentController::class, 'doUpdate'])->name('doUpdate');
-        Route::delete('/delete/{id}', [InternStudentController::class, 'delete'])->name('delete');
         Route::get('/mentors-by-institution/{institutionId}', [InternStudentController::class, 'getMentorsByInstitution'])->name('mentors_by_institution');
+
+        // Mutation restricted to Superadmin
+        Route::middleware('access_type:1')->group(function () {
+            Route::get('/add', [InternStudentController::class, 'add'])->name('add');
+            Route::post('/create', [InternStudentController::class, 'doCreate'])->name('create');
+            Route::get('/update/{id}', [InternStudentController::class, 'update'])->name('update');
+            Route::post('/update/{id}', [InternStudentController::class, 'doUpdate'])->name('doUpdate');
+            Route::delete('/delete/{id}', [InternStudentController::class, 'delete'])->name('delete');
+        });
     });
 
     Route::prefix('profile')->name('profile.')->group(function () {

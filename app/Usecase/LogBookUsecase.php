@@ -71,19 +71,7 @@ class LogBookUsecase extends Usecase
             $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
 
             if ($isPembimbing) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                $studentIds = [];
-                if ($mentor) {
-                    $studentIds = DB::table(DatabaseConst::INTERN())
-                        ->where('mentor_id', $mentor->id)
-                        ->whereNull('deleted_at')
-                        ->pluck('user_id')
-                        ->toArray();
-                }
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
 
                 if (! empty($filterData['user_id'])) {
                     if (in_array((int) $filterData['user_id'], $studentIds)) {
@@ -148,19 +136,7 @@ class LogBookUsecase extends Usecase
             $targetUserId = $filterData['user_id'] ?? null;
 
             if ($isPembimbing) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->first();
-
-                $studentIds = [];
-                if ($mentor) {
-                    $studentIds = DB::table(DatabaseConst::INTERN())
-                        ->where('mentor_id', $mentor->id)
-                        ->whereNull('deleted_at')
-                        ->pluck('user_id')
-                        ->toArray();
-                }
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
 
                 if ($targetUserId && in_array((int) $targetUserId, $studentIds)) {
                     $activeUsers = DB::table(DatabaseConst::USER())
@@ -204,6 +180,9 @@ class LogBookUsecase extends Usecase
                 ->whereYear('dl.log_date', $year)
                 ->when($targetUserId, function ($query, $userId) {
                     return $query->where('dl.user_id', $userId);
+                })
+                ->when($isPembimbing && empty($targetUserId), function ($query) use ($studentIds) {
+                    return $query->whereIn('dl.user_id', ! empty($studentIds) ? $studentIds : [0]);
                 })
                 ->orderBy('dl.log_date', 'asc');
 
@@ -353,6 +332,48 @@ class LogBookUsecase extends Usecase
     }
 
     /**
+     * Get student user IDs supervised by the given mentor user.
+     */
+    protected function getSupervisedStudentUserIds(int $userId): array
+    {
+        $mentors = DB::table(DatabaseConst::MENTOR())
+            ->where('user_id', $userId)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $mentorIds = $mentors->pluck('id')->toArray();
+        $institutionIds = $mentors->pluck('institution_id')->filter()->toArray();
+
+        if (empty($mentorIds) && empty($institutionIds)) {
+            return [];
+        }
+
+        return DB::table(DatabaseConst::INTERN())
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($mentorIds, $institutionIds) {
+                if (! empty($mentorIds)) {
+                    $q->whereIn('mentor_id', $mentorIds);
+                }
+                if (! empty($institutionIds)) {
+                    $q->orWhere(function ($sub) use ($institutionIds, $mentorIds) {
+                        $sub->whereIn('institution_id', $institutionIds);
+                        if (! empty($mentorIds)) {
+                            $sub->where(function ($s) use ($mentorIds) {
+                                $s->whereIn('mentor_id', $mentorIds)
+                                    ->orWhereNull('mentor_id');
+                            });
+                        }
+                    });
+                }
+            })
+            ->pluck('user_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    /**
      * Fetch national holidays for a month, cached 30 days.
      * Returns date(Y-m-d) => holiday name. Empty array on any failure.
      *
@@ -471,21 +492,9 @@ class LogBookUsecase extends Usecase
             $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
 
             if ($isPembimbing) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->first();
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
 
-                $isStudentOfMentor = false;
-                if ($mentor) {
-                    $isStudentOfMentor = DB::table(DatabaseConst::INTERN())
-                        ->where('mentor_id', $mentor->id)
-                        ->where('user_id', $data->user_id)
-                        ->whereNull('deleted_at')
-                        ->exists();
-                }
-
-                if (! $isStudentOfMentor) {
+                if (! in_array($data->user_id, $studentIds)) {
                     return Response::buildErrorNotFound('Anda tidak memiliki akses untuk melihat data ini.');
                 }
             } elseif (! $isSuperadmin && $data->user_id != $user?->id) {
@@ -796,22 +805,17 @@ class LogBookUsecase extends Usecase
         try {
             $user = Auth::user();
             if ($user?->access_type == UserConst::PEMBIMBING) {
-                $mentor = DB::table(DatabaseConst::MENTOR())
-                    ->where('user_id', $user->id)
-                    ->whereNull('deleted_at')
-                    ->first();
+                $studentIds = $this->getSupervisedStudentUserIds($user->id);
 
-                if (! $mentor) {
+                if (empty($studentIds)) {
                     return [];
                 }
 
-                $users = DB::table(DatabaseConst::INTERN().' as i')
-                    ->join(DatabaseConst::USER().' as u', 'i.user_id', '=', 'u.id')
-                    ->where('i.mentor_id', $mentor->id)
-                    ->whereNull('i.deleted_at')
-                    ->whereNull('u.deleted_at')
-                    ->select('u.id', 'u.name')
-                    ->orderBy('u.name', 'asc')
+                $users = DB::table(DatabaseConst::USER())
+                    ->whereIn('id', $studentIds)
+                    ->whereNull('deleted_at')
+                    ->select('id', 'name')
+                    ->orderBy('name', 'asc')
                     ->get();
             } else {
                 $users = DB::table(DatabaseConst::USER())
