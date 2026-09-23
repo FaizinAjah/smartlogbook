@@ -26,14 +26,14 @@
 </head>
 
 <body>
-    <!-- ========== HEADER ========== -->
+    <!-- ========== HEADER (Mobile Only) ========== -->
     <header
-        class="inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-[48] w-full bg-white border-b border-gray-200 text-sm py-1 lg:py-0 xl:py-0 lg:ps-65 dark:bg-neutral-800 dark:border-neutral-700 fixed top-0 left-0 right-0 shadow-lg">
+        class="lg:hidden inset-x-0 flex flex-wrap md:justify-start md:flex-nowrap z-[48] w-full bg-white border-b border-gray-200 text-sm py-1 dark:bg-neutral-800 dark:border-neutral-700 fixed top-0 left-0 right-0 shadow-sm">
         <nav class="px-4 sm:px-2 flex basis-full items-center w-full mx-auto">
-            <div class="me-1 lg:me-0 lg:hidden flex items-center">
+            <div class="me-1 flex items-center">
                 <!-- Navigation Toggle -->
                 <button type="button"
-                    class="me-0 size-8 px-3 flex justify-center items-center gap-x-2 border border-gray-200 text-gray-800 hover:text-gray-500 rounded-lg focus:outline-hidden focus:text-gray-500 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-neutral-200 dark:hover:text-neutral-500 dark:focus:text-neutral-500 shadow-lg"
+                    class="me-0 size-8 px-3 flex justify-center items-center gap-x-2 border border-gray-200 text-gray-800 hover:text-gray-500 rounded-lg focus:outline-hidden focus:text-gray-500 disabled:opacity-50 disabled:pointer-events-none dark:border-neutral-700 dark:text-neutral-200 dark:hover:text-neutral-500 dark:focus:text-neutral-500 shadow-sm"
                     aria-haspopup="dialog" aria-expanded="false" aria-controls="hs-application-sidebar"
                     aria-label="Toggle navigation" data-hs-overlay="#hs-application-sidebar">
                     <span class="sr-only">Toggle Navigation</span>
@@ -52,14 +52,10 @@
                     <img src="{{ asset('images/logo-light.png') }}" alt="Logo Smart Project Starter Kit" class="w-40 h-auto p-4">
                 </a>
                 <!-- End Logo -->
-
-            </div>
-
-            <div class="w-full flex items-center justify-end ms-auto gap-x-2 py-2">
             </div>
         </nav>
     </header>
-    <div class="mt-16 sm:mt-0"></div>
+    <div class="lg:hidden mt-16"></div>
     <!-- ========== END HEADER ========== -->
 
     @include('_admin._layout.sidebar.sidebar')

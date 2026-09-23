@@ -36,9 +36,7 @@ class InternStudentUsecase extends Usecase
                     'u.name as student_name',
                     'u.email as student_email',
                     'inst.name as institution_name',
-                    'm.name as mentor_name',
-                    DB::raw('(SELECT COUNT(*) FROM '.DatabaseConst::DAILY_LOG().' as dl WHERE dl.user_id = i.user_id AND dl.deleted_at IS NULL) as total_logs'),
-                    DB::raw("(SELECT COUNT(*) FROM ".DatabaseConst::DAILY_LOG()." as dl WHERE dl.user_id = i.user_id AND dl.deleted_at IS NULL AND (dl.status = 'sudah_direview' OR dl.status = 'Sudah Direview')) as approved_logs")
+                    'm.name as mentor_name'
                 )
                 ->whereNull('i.deleted_at');
 

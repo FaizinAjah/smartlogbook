@@ -134,6 +134,7 @@ class LogBookUsecase extends Usecase
             $isSuperadmin = $user?->access_type == UserConst::SUPERADMIN;
             $isPembimbing = $user?->access_type == UserConst::PEMBIMBING;
             $targetUserId = $filterData['user_id'] ?? null;
+            $studentIds = [];
 
             if ($isPembimbing) {
                 $studentIds = $this->getSupervisedStudentUserIds($user->id);
