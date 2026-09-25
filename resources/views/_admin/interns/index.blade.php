@@ -74,7 +74,6 @@
                     <x-admin.table.th>Peserta Magang</x-admin.table.th>
                     <x-admin.table.th class="w-px whitespace-nowrap">Institusi & Jurusan</x-admin.table.th>
                     <x-admin.table.th class="w-px whitespace-nowrap">Pembimbing</x-admin.table.th>
-                    <x-admin.table.th align="center" class="w-px whitespace-nowrap">Log Book</x-admin.table.th>
                     <x-admin.table.th align="center" class="w-px whitespace-nowrap">Status</x-admin.table.th>
                     <x-admin.table.th align="end" class="w-px whitespace-nowrap"></x-admin.table.th>
                 </tr>
@@ -117,13 +116,6 @@
                             </span>
                         </x-admin.table.td>
                         <x-admin.table.td align="center">
-                            <a href="{{ route('admin.log_book.index', ['user_id' => $d->user_id]) }}"
-                                class="inline-flex items-center gap-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition"
-                                title="Lihat Log Book Siswa">
-                                <span>{{ $d->approved_logs }} / {{ $d->total_logs }} Log</span>
-                            </a>
-                        </x-admin.table.td>
-                        <x-admin.table.td align="center">
                             @if($d->status === 'aktif')
                                 <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                     Aktif
@@ -161,7 +153,7 @@
                     </x-admin.table.tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-12 text-sm text-gray-500 dark:text-neutral-400">
+                        <td colspan="5" class="text-center py-12 text-sm text-gray-500 dark:text-neutral-400">
                             Belum ada data peserta magang yang terdaftar.
                         </td>
                     </tr>

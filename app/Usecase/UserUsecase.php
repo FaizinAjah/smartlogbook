@@ -266,15 +266,13 @@ class UserUsecase extends Usecase
 
     public function resetPassword(int $id): array
     {
-        $defaultPassword = UserConst::DEFAULT_PASSWORD;
-
         DB::beginTransaction();
 
         try {
             DB::table(DatabaseConst::USER())
                 ->where('id', $id)
                 ->update([
-                    'password' => Hash::make($defaultPassword),
+                    'password' => UserConst::DEFAULT_PASSWORD,
                     'updated_by' => Auth::user()?->id,
                     'updated_at' => now(),
                 ]);
@@ -282,7 +280,7 @@ class UserUsecase extends Usecase
             DB::commit();
 
             return Response::buildSuccess(
-                message: 'Password berhasil direset ke '.UserConst::DEFAULT_PASSWORD
+                message: 'Password berhasil direset ke nibs123'
             );
         } catch (Exception $e) {
             DB::rollback();
