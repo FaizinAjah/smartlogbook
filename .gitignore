@@ -37,3 +37,4 @@ analysis.md
 .trae/
 tests/
 *.md
+!README.md
