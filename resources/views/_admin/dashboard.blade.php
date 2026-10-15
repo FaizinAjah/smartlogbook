@@ -163,7 +163,7 @@
                             <div class="flex items-start justify-between">
 
                                 <div class="size-14 rounded-2xl {{ $c['icon'] }} flex items-center justify-center shadow-lg {{ $c['icon_shadow'] }} ring-1 ring-white/20 ring-inset transition-all duration-300 group-hover:shadow-xl group-hover:scale-[1.03] [&_svg]:size-6">
-                                    @if ($menu->icon)
+                                    @if ($menu->icon && \Illuminate\Support\Facades\View::exists($menu->icon))
                                         @include($menu->icon)
                                     @endif
                                 </div>
