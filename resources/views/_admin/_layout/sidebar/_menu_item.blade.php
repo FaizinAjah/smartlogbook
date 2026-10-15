@@ -79,7 +79,7 @@
             <a navigate
                 class="group flex items-center gap-x-3 py-2.5 px-3.5 {{ $isActive ? $activeClass : $inactiveClass }} text-sm font-light rounded-xl border transition-all duration-200"
                 href="{{ $url }}">
-                @if ($menu->icon)
+                @if ($menu->icon && View::exists($menu->icon))
                     <span class="relative">
                         @include($menu->icon)
                         @if ($isActive)
@@ -92,7 +92,7 @@
         @else
             <span
                 class="group flex items-center gap-x-3 py-2.5 px-3.5 {{ $inactiveClass }} text-sm font-light rounded-xl border transition-all duration-200">
-                @if ($menu->icon)
+                @if ($menu->icon && View::exists($menu->icon))
                     <span class="relative">
                         @include($menu->icon)
                     </span>
@@ -109,7 +109,7 @@
             aria-expanded="{{ $isActive ? 'true' : 'false' }}"
             aria-controls="{{ $accordionId }}-child">
             <div class="flex items-center gap-x-3">
-                @if ($menu->icon)
+                @if ($menu->icon && View::exists($menu->icon))
                     <span class="relative">
                         @include($menu->icon)
                         @if ($isActive)
