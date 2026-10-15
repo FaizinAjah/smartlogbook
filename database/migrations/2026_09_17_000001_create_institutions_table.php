@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::disableForeignKeyConstraints();
+
         if (! Schema::hasTable('institutions')) {
             Schema::create('institutions', function (Blueprint $table) {
                 $table->id();
@@ -28,6 +30,8 @@ return new class extends Migration
                 $table->softDeletes();
             });
         }
+
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -35,6 +39,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('institutions');
+        Schema::enableForeignKeyConstraints();
     }
 };

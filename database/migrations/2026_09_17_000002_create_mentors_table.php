@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::disableForeignKeyConstraints();
+
         if (! Schema::hasTable('mentors')) {
             Schema::create('mentors', function (Blueprint $table) {
                 $table->id();
@@ -31,6 +33,8 @@ return new class extends Migration
                 $table->index('user_id');
             });
         }
+
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -38,6 +42,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('mentors');
+        Schema::enableForeignKeyConstraints();
     }
 };
