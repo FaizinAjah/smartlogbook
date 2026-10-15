@@ -21,8 +21,11 @@ class DashboardController extends Controller
         );
 
         $allowedRoutes = [
-            'admin.users.index',
             'admin.log_book.index',
+            'admin.institutions.index',
+            'admin.interns.index',
+            'admin.holidays.index',
+            'admin.users.index',
         ];
 
         $modules = collect($modules['data'] ?? [])

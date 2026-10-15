@@ -480,6 +480,7 @@ class SidebarMenuUsecase extends Usecase
         $accessTypes = [
             UserConst::SUPERADMIN,
             UserConst::ANGGOTA,
+            UserConst::PEMBIMBING,
         ];
 
         foreach ($accessTypes as $accessType) {
